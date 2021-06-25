@@ -47,14 +47,14 @@ You can now run the development server:
 
     $ python manage.py test "tests/" 
 
-#Todo
+# Todo
 
 * Add more tests
 
-#Contact
+# Contact
 Zahra Keshtkar - [zkeshtkarz@gmail.com](zkeshtkarz@gmail.com)
 
-#Contributing
+# Contributing
 This project can definitely be improved ,and your feedback will help me. so please feel free to fix bugs, improve things. Just send a pull request.
 
 
