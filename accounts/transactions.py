@@ -7,8 +7,6 @@ from customers.models import Customer
 
 @transaction.atomic
 def register_user_with_email_and_password(email, password):
-    print(email)
-    print(password)
     user = User.objects.create_user(email=email, username=email, password=password)
     user.save()
     return user

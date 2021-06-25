@@ -122,23 +122,3 @@ class FoodSerializer(serializers.ModelSerializer):
             'restaurant': instance.restaurant.name
 
         }
-
-
-class OrderDataManagerSerializer(serializers.BaseSerializer):
-    def to_representation(self, instance):
-        state = ''
-        if instance.state == 'W':
-            state = 'در حال انتظار'
-        elif instance.state == 'P':
-            state = 'در حال اماده سازی'
-        elif instance.state == 'S':
-            state = 'در حال ارسال'
-        else:
-            state = 'دریافت شده'
-        return {
-            'price': instance.price,
-            'restaurant': instance.restaurant.name,
-            'id': instance.id,
-            'state': state,
-            'username': instance.user.name
-        }

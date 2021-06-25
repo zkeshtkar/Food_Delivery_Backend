@@ -18,6 +18,23 @@ class CustomerSerializer(serializers.ModelSerializer):
             'credit': instance.credit
         }
 
+    def create(self, validated_data):
+        customer = Customer.objects.create(**validated_data)
+        customer.save()
+
+    def update(self, instance, validated_data):
+        instance.name = validated_data.get(
+            'name', instance.name
+        )
+        instance.address = validated_data.get(
+            'address', instance.address
+        )
+        instance.region = validated_data.get(
+            'region', instance.region
+        )
+        instance.save()
+        return instance
+
 
 class OrderSerializer(serializers.ModelSerializer):
     class Meta:
@@ -45,7 +62,8 @@ class OrderSerializer(serializers.ModelSerializer):
             'price': instance.price,
             'restaurant': instance.restaurant.name,
             'id': instance.id,
-            'state': state
+            'state': state,
+            'username': instance.user.name
         }
 
 

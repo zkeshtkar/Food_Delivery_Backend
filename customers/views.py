@@ -1,96 +1,90 @@
-import time
 from datetime import datetime
 
+from django.db import transaction
 from django.db.models import Avg
-from rest_framework import status, generics
+from rest_framework import status
 from rest_framework.generics import get_object_or_404
-from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework import exceptions
 
-from accounts.models import User
-from customers import transactions
+from accounts.permissions import IsCustomer
 from customers.models import Customer
-from customers.serializers import CustomerSerializer, OrderSerializer, ProfileDataSerializer, \
+from customers.serializers import CustomerSerializer, OrderSerializer, \
     CommentSerializer
 from managers.models import Restaurant, Food, Order, Comment
 from managers.serializers import FoodSerializer
-from utilities import responses
 
 
-
-class CustomerUpdateProfile(APIView):
-    permission_classes = (IsAuthenticated,)
+class CustomerView(APIView):
+    """
+    update profile for customer user and get profile
+    """
+    permission_classes = (IsCustomer,)
     serializer_class = CustomerSerializer
 
     def post(self, request):
         try:
-            serialized_data = self.serializer_class(data=request.data)
+            customer = Customer.objects.get(user=request.user)
+            serialized_data = self.serializer_class(data=request.data, instance=customer, partial=True)
             if serialized_data.is_valid(raise_exception=True):
-                try:
-                    Customer.objects.get(user=request.user)
-                except Customer.DoesNotExist as e:
-                    return responses.ErrorResponse(message=e.detail, status=e.status_code).send()
-
-                serialized_data.save(user=request.user)
+                serialized_data.save()
+                return Response(status=status.HTTP_200_OK)
         except exceptions.ValidationError as e:
-            return responses.ErrorResponse(message=e.detail, status=e.status_code).send()
+            return Response(status=e.status_code)
 
-        return responses.SuccessResponse(status=status.HTTP_201_CREATED)
+        except Customer.DoesNotExist as e:
+            return Response(status=e.status_code)
 
     def get(self, request):
         try:
             customer = Customer.objects.get(user__id=request.user.id)
         except Customer.DoesNotExist as e:
-            return responses.ErrorResponse(message=e.detail, status=e.status_code).send()
-        return Response(ProfileDataSerializer(customer).data)
+            return Response(status=e.status_code)
+        return Response(data=self.serializer_class(customer).data, status=status.HTTP_200_OK)
 
 
 class OrderView(APIView):
-    permission_classes = (IsAuthenticated,)
+    """
+    order foods by food_id and get them
+    """
+    permission_classes = (IsCustomer,)
     serializer_class = OrderSerializer
 
+    @transaction.atomic
     def post(self, request, restaurant_name):
-        print(request.data)
-        print(request.user.id)
-        print("idddddddddd")
         restaurant = get_object_or_404(Restaurant, name=restaurant_name)
-        ids = request.data.get('foods')
+        foods_id = request.data.get('foods')
         customer = Customer.objects.get(user__id=request.user.id)
         order = Order.objects.create(user=customer, restaurant=restaurant)
         price = 0
-        for id in ids:
-            food = Food.objects.filter(id=int(id))
-            price += food[0].price
-            print(food[0].name)
-            order.foods.add(food[0])
+        for food_id in foods_id:
+            food = Food.objects.get(id=int(food_id))
+            price += food.price
+            if customer.credit < price:
+                return Response(status=status.HTTP_400_BAD_REQUEST)
         order.price = price
         order.save()
-        if customer.credit < price:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
+        order.foods.add(*foods_id)
         customer.credit = customer.credit - price
         customer.save()
         return Response({'message': 'order added successfully!'})
 
     def get(self, request):
-        customer = Customer.objects.get(user__id=request.user.id)
-        orders = Order.objects.filter(user__id=customer.id)
-        for order in orders:
-            if order.is_accepted:
-                if order.state == Order.OrderStatus.WAITING:
-                    order.state = Order.OrderStatus.PREPARING
-                elif order.state == Order.OrderStatus.PREPARING:
-                    order.state = Order.OrderStatus.SENDING
-                elif order.state == order.OrderStatus.SENDING:
-                    order.state = Order.OrderStatus.DONE
-                order.save()
-        serializer = OrderDataSerializer(orders, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        try:
+            customer = Customer.objects.get(user__id=request.user.id)
+            orders = Order.objects.filter(user__id=customer.id)
+            return Response(data=self.serializer_class(orders, many=True).data, status=status.HTTP_200_OK)
+        except Customer.DoesNotExist as e:
+            return Response(status=e.status_code)
 
 
 class FoodSearch(APIView):
-    permission_classes = (IsAuthenticated,)
+    """
+    search foods by name of restaurant or region or name of food
+    """
+    permission_classes = (IsCustomer,)
+    serializer_class = FoodSerializer
 
     def get(self, request, search_type, name):
         now = datetime.now()
@@ -99,55 +93,72 @@ class FoodSearch(APIView):
         elif search_type == 'restaurant':
             queryset = Food.objects.filter(restaurant__name=name, ordered=True)
         elif search_type == 'region':
-            arr = [int(name)]
-            queryset = Food.objects.filter(restaurant__area_service__contains=arr, ordered=True)
+            queryset = Food.objects.filter(restaurant__area_service__contains=[int(name)], ordered=True)
         else:
-
             queryset = Food.objects.filter(ordered=True, restaurant__start_time__lt=now,
                                            restaurant__end_time__gt=now)
-        serializer = FoodDataSerializer(queryset, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(data=self.serializer_class(queryset, many=True).data, status=status.HTTP_200_OK)
 
 
 class FoodOrder(APIView):
+    """
+    get food by id
+    """
+    permission_classes = (IsCustomer,)
+    serializer_class = FoodSerializer
+
     def get(self, request, order_id):
         orders = Food.objects.filter(order__id=order_id)
-        serializer = FoodDataSerializer(orders, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(self.serializer_class(orders, many=True).data, status=status.HTTP_200_OK)
 
 
 class CommentView(APIView):
-    permission_classes = (IsAuthenticated,)
+    """
+    add comment for food by food_id
+    """
+    permission_classes = (IsCustomer,)
     serializer_class = CommentSerializer
 
     def post(self, request, food_id):
-        food = get_object_or_404(Food, id=food_id)
-        user = Customer.objects.get(user__id=request.user.id)
-        serializer = CommentSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save(food=food, user=user)
-            return Response({'message': 'Food added successfully!'})
+        try:
+
+            food = Food.objects.get(id=food_id)
+            user = Customer.objects.get(user__id=request.user.id)
+            serialized_data = self.serializer_class(data=request.data)
+            if serialized_data.is_valid(raise_exception=True):
+                serialized_data.save(food=food, user=user)
+                return Response(status=status.HTTP_200_OK)
+        except exceptions.ValidationError as e:
+            return Response(status=e.status_code)
+        except Food.DoesNotExist as e:
+            return Response(status=e.status_code)
+        except Customer.DoesNotExist as e:
+            return Response(status=e.status_code)
 
         return Response({'message': CommentSerializer.errors})
 
 
 class FavoriteFoodView(APIView):
+    """
+    get favorite food
+    """
+    permission_classes = (IsCustomer,)
+    serializer_class = FoodSerializer
+
     def get(self, request):
-        customer = Customer.objects.get(user__id=request.user.id)
-        comments = Comment.objects.filter(user__id=customer.id)
-        foodlist = []
-        for comment in comments:
-            for comment2 in comments:
-                score = 0
-                i = 0
-                j = 0
-                if comment.food.name == comment2.food.name and comment.food.restaurant.name == comment2.food.restaurant.name:
-                    score += comment.score
-                    j += 1
-                i += 1
-                if score != 0 and score / j > 3:
-                    foodlist.append(comment.food)
-                elif j > 5:
-                    foodlist.append(comment.food)
-        serializer = FoodDataSerializer(foodlist, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        try:
+            customer = Customer.objects.get(user__id=request.user.id)
+            favorite_foods = Comment.objects.filter(
+                user__id=customer.id
+            ).values_list(
+                'score'
+            ).order_by(
+                'score'
+            ).annotate(
+                avg_score=Avg('score')
+            ).filter(
+                avg_score__gt=3
+            )
+            return Response(self.serializer_class(favorite_foods, many=True).data, status=status.HTTP_200_OK)
+        except Customer.DoesNotExist as e:
+            return Response(status=e.status_code)

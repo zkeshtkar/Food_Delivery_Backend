@@ -1,17 +1,17 @@
-from django.contrib.auth import authenticate
 from rest_framework import generics, decorators
 from rest_framework.permissions import AllowAny
+from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework import status
 
 from accounts import transactions
 from accounts.models import User
 from accounts.serializers import RegisterWithEmailSerializer, RegisterWithPhoneSerializer
-from utilities import responses, exceptions as authnz_exceptions, utilities
+from utilities import exceptions as authnz_exceptions
 from rest_framework import exceptions
 
 
 class RegisterWithEmailView(generics.CreateAPIView):
-
     permission_classes = [AllowAny, ]
     """
     Register with email and password pass min len is 8 and need alpha and numeric
@@ -20,7 +20,6 @@ class RegisterWithEmailView(generics.CreateAPIView):
 
     def post(self, request, **kwargs):
         try:
-            print(request.data)
             serialized_data = self.serializer_class(data=request.data)
             if serialized_data.is_valid(raise_exception=True):
                 email = serialized_data.data['email'].lower()
@@ -35,16 +34,16 @@ class RegisterWithEmailView(generics.CreateAPIView):
                 else:
                     RegisterWithEmailSerializer(data=request.data)
                     transactions.register_user_with_email_and_password(email, password)
-                    return responses.SuccessResponse(message='Registration completed successfully.').send()
+                    return Response(status=status.HTTP_200_OK)
         except authnz_exceptions.CustomException as e:
-            return responses.ErrorResponse(message=e.detail, status=e.status_code).send()
+            return Response(status=e.status_code)
         except exceptions.ValidationError as e:
-            return responses.ErrorResponse(message=e.detail, status=e.status_code).send()
+            return Response(status=e.status_code)
 
 
-@decorators.authentication_classes([])
-@decorators.permission_classes([])
 class RegisterWithPhoneView(generics.CreateAPIView):
+    permission_classes = [AllowAny, ]
+
     """
     Register with email and password pass min len is 8 and need alpha and numeric
     """
@@ -52,7 +51,6 @@ class RegisterWithPhoneView(generics.CreateAPIView):
 
     def post(self, request, **kwargs):
         try:
-            print(request)
             serialized_data = self.serializer_class(data=request.data)
             if serialized_data.is_valid(raise_exception=True):
                 phone = serialized_data.data['phone']
@@ -68,12 +66,14 @@ class RegisterWithPhoneView(generics.CreateAPIView):
                 else:
                     RegisterWithPhoneSerializer(data=request.data)
                     transactions.register_user_with_phone_and_password(phone, pass_word)
-                    return responses.SuccessResponse(message='Registration completed successfully').send()
+                    return Response(status=status.HTTP_200_OK)
         except authnz_exceptions.CustomException as e:
-            return responses.ErrorResponse(message=e.detail, status=e.status_code).send()
+            return Response(status=e.status_code)
         except exceptions.ValidationError as e:
-            return responses.ErrorResponse(message=e.detail, status=e.status_code).send()
+            return Response(status=e.status_code)
 
 
 class LogoutAPIView(APIView):
+    permission_classes = [AllowAny, ]
+
     pass
