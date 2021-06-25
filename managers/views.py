@@ -6,7 +6,7 @@ from rest_framework.views import APIView
 from accounts.models import User
 from customers.serializers import OrderSerializer
 from accounts.permissions import IsManager
-from managers.models import Restaurant, Food, Order
+from managers.models import Restaurant, Food, Order, Manager
 from managers.serializers import RestaurantSerializer, FoodSerializer
 
 
@@ -19,10 +19,10 @@ class RestaurantView(APIView):
 
     def post(self, request):
         try:
-            user = User.objects.get(id=request.user.id)
+            manager = Manager.objects.get(user__id=request.user.id)
             serialized_data = self.serializer_class(data=request.data)
             if serialized_data.is_valid(raise_exception=True):
-                serialized_data.save(user=user)
+                serialized_data.save(manager=manager)
                 return Response(status=status.HTTP_200_OK)
         except exceptions.ValidationError as e:
             return Response(status=e.status_code)
@@ -43,7 +43,7 @@ class RestaurantView(APIView):
             return Response(status=e.status_code)
 
     def get(self, request):
-        queryset = Restaurant.objects.filter(user=request.user)
+        queryset = Restaurant.objects.filter(manager__user=request.user)
         serializer = self.serializer_class(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 

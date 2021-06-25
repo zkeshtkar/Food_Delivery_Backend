@@ -5,8 +5,12 @@ from accounts.models import User
 from customers.models import Customer
 
 
+class Manager(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+
+
 class Restaurant(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    manager = models.ForeignKey(Manager, on_delete=models.CASCADE)
     start_time = models.TimeField(auto_now=False, auto_now_add=False)
     end_time = models.TimeField(auto_now=False, auto_now_add=False)
     name = models.CharField(max_length=60, unique=True)

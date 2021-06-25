@@ -12,7 +12,7 @@ urlpatterns = [
     path('update/orders/<int:restaurant_id>/<int:order_id>/', views.OrderView.as_view()),
     path('restaurants/', views.RestaurantView.as_view()),
     path('foods/<int:restaurant_id>', views.FoodView.as_view()),
-    path('get/order', views.OrderView2.as_view()),
+    path('get/order', views.OrderView.as_view()),
     path('food/order/<int:order_id>', views.FoodOrder.as_view()),
 
 ]

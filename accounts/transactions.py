@@ -3,12 +3,15 @@ from django.db import transaction
 
 from accounts.models import User
 from customers.models import Customer
+from managers.models import Manager
 
 
 @transaction.atomic
 def register_user_with_email_and_password(email, password):
     user = User.objects.create_user(email=email, username=email, password=password)
     user.save()
+    manager = Manager.objects.create(user=user)
+    manager.save()
     return user
 
 
