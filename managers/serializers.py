@@ -81,28 +81,16 @@ class FoodSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         instance.start_time = validated_data.get(
-            'start_time', instance.start_time
+            'name', instance.start_time
         )
         instance.end_time = validated_data.get(
-            'end_time', instance.end_time
+            'price', instance.end_time
         )
         instance.name = validated_data.get(
             'name', instance.name
         )
-        instance.address = validated_data.get(
-            'address', instance.address
-        )
-        instance.food_delivery_time = validated_data.get(
-            'food_delivery_time', instance.food_delivery_time
-        )
-        instance.fixed_cost = validated_data.get(
-            'fixed_cost', instance.fixed_cost
-        )
-        instance.fixed_cost = validated_data.get(
-            'fixed_cost', instance.fixed_cost
-        )
-        instance.area_service = validated_data.get(
-            validated_data.pop('area_service'), instance.area_service
+        instance.ordered = validated_data.get(
+            'ordered', instance.ordered
         )
 
         instance.save()
@@ -119,7 +107,7 @@ class FoodSerializer(serializers.ModelSerializer):
             'price': instance.price,
             'ordered': ans,
             'id': instance.id,
-            'ordered2': instance.ordered,
+            'ordered_eng': instance.ordered,
             'restaurant': instance.restaurant.name
 
         }
