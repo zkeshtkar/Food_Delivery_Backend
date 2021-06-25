@@ -13,7 +13,7 @@ Activate the virtualenv for your project.
     
 Install project dependencies:
 
-    $ pip install -r requirements
+    $ pip install -r requirements.txt
 
 Change password and name of database in config/settings.py:
 
