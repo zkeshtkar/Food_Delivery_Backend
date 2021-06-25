@@ -42,11 +42,9 @@ class RestaurantSerializer(serializers.ModelSerializer):
         instance.fixed_cost = validated_data.get(
             'fixed_cost', instance.fixed_cost
         )
-        # instance.area_service = validated_data.get(
-        #     validated_data.pop('area_service'), instance.area_service
-        # )
-        print(validated_data)
-        print("~~~~~~~~~~~~~~")
+        instance.area_service = validated_data.get(
+            validated_data.pop('area_service'), instance.area_service
+        )
 
         instance.save()
         return instance
