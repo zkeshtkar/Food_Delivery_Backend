@@ -26,8 +26,8 @@ class RestaurantView(APIView):
                 return Response(status=status.HTTP_200_OK)
         except exceptions.ValidationError as e:
             return Response(status=e.status_code)
-        except User.DoesNotExist as e:
-            return Response(status=e.status_code)
+        except User.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
 
     def put(self, request, restaurant_id):
         try:
@@ -39,8 +39,8 @@ class RestaurantView(APIView):
                 return Response(status=status.HTTP_200_OK)
         except exceptions.ValidationError as e:
             return Response(status=e.status_code)
-        except Restaurant.DoesNotExist as e:
-            return Response(status=e.status_code)
+        except Restaurant.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
 
     def get(self, request):
         queryset = Restaurant.objects.filter(manager__user=request.user)
@@ -61,8 +61,8 @@ class FoodView(APIView):
                 return Response(status=status.HTTP_200_OK)
         except exceptions.ValidationError as e:
             return Response(status=e.status_code)
-        except Restaurant.DoesNotExist as e:
-            return Response(status=e.status_code)
+        except Restaurant.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
 
     def put(self, request, food_id):
         try:
@@ -73,37 +73,34 @@ class FoodView(APIView):
                 return Response(status=status.HTTP_200_OK)
         except exceptions.ValidationError as e:
             return Response(status=e.status_code)
-        except Food.DoesNotExist as e:
-            return Response(status=e.status_code)
+        except Food.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
 
-    def delete(self, request, restaurant_id, food_id):
+    def delete(self, request, food_id):
 
         try:
-            Food.objects.get(id=food_id, restaurant__id=restaurant_id).delete()
+            Food.objects.get(id=food_id).delete()
             return Response(status=status.HTTP_200_OK)
-        except Food.DoesNotExist as e:
-            return Response(status=e.status_code)
+        except Food.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
 
     def get(self, request, restaurant_id):
-        try:
-            food = Food.objects.get(restaurant__id=restaurant_id)
-            serialized_data = self.serializer_class(food, many=True)
-            return Response(serialized_data.data, status=status.HTTP_200_OK)
-        except Food.DoesNotExist as e:
-            return Response(status=e.status_code)
+        food = Food.objects.filter(restaurant__id=restaurant_id)
+        serialized_data = self.serializer_class(food, many=True)
+        return Response(serialized_data.data, status=status.HTTP_200_OK)
 
 
 class OrderView(APIView):
     permission_classes = (IsManager,)
     serializer_class = OrderSerializer
 
-    def get(self, request):
+    def get(self, request, restaurant_id):
         try:
-            restaurant = Restaurant.objects.get(user__id=request.user.id)
-            serialized_data = self.serializer_class(restaurant, many=True)
+            order = Order.objects.filter(restaurant__manager__user=request.user,restaurant_id=restaurant_id)
+            serialized_data = self.serializer_class(order, many=True)
             return Response(serialized_data.data, status=status.HTTP_200_OK)
-        except Restaurant.DoesNotExist as e:
-            return Response(status=e.status_code)
+        except Restaurant.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
 
     def put(self, request, order_id):
         try:
@@ -114,8 +111,8 @@ class OrderView(APIView):
                 return Response(status=status.HTTP_200_OK)
         except exceptions.ValidationError as e:
             return Response(status=e.status_code)
-        except Order.DoesNotExist as e:
-            return Response(status=e.status_code)
+        except Order.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
 
 
 class FoodOrder(APIView):
@@ -127,5 +124,5 @@ class FoodOrder(APIView):
             food = Food.objects.get(orderd__id=order_id)
             serialized_data = self.serializer_class(food, many=True)
             return Response(serialized_data.data, status=status.HTTP_200_OK)
-        except Food.DoesNotExist as e:
-            return Response(status=e.status_code)
+        except Food.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)

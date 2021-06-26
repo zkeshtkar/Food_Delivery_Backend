@@ -6,7 +6,7 @@ from accounts.views import RegisterWithEmailView, RegisterWithPhoneView, LogoutA
 urlpatterns = [
     path('register/customer', RegisterWithPhoneView.as_view()),
     path('register/manager', RegisterWithEmailView.as_view()),
-    path('logout/', LogoutAPIView.as_view()),
-    path('login/', obtain_auth_token),
+    path('logout', LogoutAPIView.as_view()),
+    path('login', obtain_auth_token),
 
 ]

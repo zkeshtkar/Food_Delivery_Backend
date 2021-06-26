@@ -63,7 +63,8 @@ class OrderSerializer(serializers.ModelSerializer):
             'restaurant': instance.restaurant.name,
             'id': instance.id,
             'state': state,
-            'username': instance.user.name
+            'username': instance.user.name,
+            'is_accepted': instance.is_accepted
         }
 
 

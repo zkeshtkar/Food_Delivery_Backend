@@ -70,7 +70,7 @@ class FoodSerializer(serializers.ModelSerializer):
     class Meta:
         model = Food
         fields = (
-            'name', 'price')
+            'name', 'price', 'ordered')
 
     def create(self, validated_data):
 
@@ -80,14 +80,11 @@ class FoodSerializer(serializers.ModelSerializer):
         return food
 
     def update(self, instance, validated_data):
-        instance.start_time = validated_data.get(
-            'name', instance.start_time
-        )
-        instance.end_time = validated_data.get(
-            'price', instance.end_time
-        )
         instance.name = validated_data.get(
             'name', instance.name
+        )
+        instance.price = validated_data.get(
+            'price', instance.price
         )
         instance.ordered = validated_data.get(
             'ordered', instance.ordered

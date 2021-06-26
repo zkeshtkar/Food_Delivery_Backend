@@ -8,7 +8,7 @@ from managers.models import Restaurant, Manager
 
 class TestAll(TestCase):
     def login_customer(self):
-        login_response = self.client.post('/accounts/login/', data={
+        login_response = self.client.post('/accounts/login', data={
             "username": "09301094455",
             "password": "123Aa123"
         }, format='json')
@@ -19,7 +19,7 @@ class TestAll(TestCase):
         return header
 
     def login_manager(self):
-        login_response = self.client.post('/accounts/login/', data={
+        login_response = self.client.post('/accounts/login', data={
             "username": "zkeshtkarzzz@gmail.com",
             "password": "123Aa123"
         }, format='json')
@@ -50,7 +50,7 @@ class TestAll(TestCase):
 
     def test_sample_customer_complete_registration(self):
         header = self.login_customer()
-        url = '/customer/update/profile/'
+        url = '/customer/update/profile'
         data = {
             "name": "zahra",
             "region": "5",
@@ -64,7 +64,7 @@ class TestAll(TestCase):
 
     def test_sample_customer_with_no_address_registration(self):
         header = self.login_customer()
-        url = '/customer/update/profile/'
+        url = '/customer/update/profile'
         data = {
             "name": "zahra",
             "region": "5"
@@ -75,7 +75,7 @@ class TestAll(TestCase):
         self.assertEqual(customer.name, "zahra")
         self.assertEqual(customer.address, None)
 
-        url = '/customer/profile/'
+        url = '/customer/profile'
         response = self.client.get(url, format='json', **header)
         self.assertEqual(customer.name, response.data.get('name'))
         self.assertEqual(customer.address, response.data.get('address'))
@@ -83,7 +83,7 @@ class TestAll(TestCase):
 
     def test_sample_manager_add_restaurant(self):
         header = self.login_manager()
-        url = '/manager/add/restaurant/'
+        url = '/manager/add/restaurant'
         data = {
             'name': 'مروارید', 'start_time': '14:22', 'end_time': '14:22', 'address': 'مرزداران',
             'food_delivery_time': '14:22', 'fixed_cost': '1000', 'region': '2', 'area_service': [1]
@@ -104,7 +104,7 @@ class TestAll(TestCase):
         self.assertEqual(restaurant.name, "sib")
         self.assertEqual(restaurant.address, "مرزداران")
 
-        url = '/manager/restaurants/'
+        url = '/manager/restaurants'
         response = self.client.get(url, **header)
         self.assertEqual(len(response.data), 1)
         self.assertEqual(response.data[0].get('name'), "sib")

@@ -56,16 +56,19 @@ class OrderView(APIView):
         restaurant = get_object_or_404(Restaurant, name=restaurant_name)
         foods_id = request.data.get('foods')
         customer = Customer.objects.get(user__id=request.user.id)
-        order = Order.objects.create(user=customer, restaurant=restaurant)
         price = 0
         for food_id in foods_id:
             food = Food.objects.get(id=int(food_id))
             price += food.price
-            if customer.credit < price:
+            if customer.credit < price or not food.ordered:
                 return Response(status=status.HTTP_400_BAD_REQUEST)
+        price += restaurant.fixed_cost
+        if customer.credit < price:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+        order = Order.objects.create(user=customer, restaurant=restaurant, is_accepted=False)
         order.price = price
-        order.save()
         order.foods.add(*foods_id)
+        order.save()
         customer.credit = customer.credit - price
         customer.save()
         return Response({'message': 'order added successfully!'})
@@ -102,7 +105,7 @@ class FoodSearch(APIView):
 
 class FoodOrder(APIView):
     """
-    get food by id
+    get food by order id
     """
     permission_classes = (IsCustomer,)
     serializer_class = FoodSerializer
